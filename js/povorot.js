@@ -105,7 +105,16 @@
     showStart(false);
   }
 
-  startBtn.addEventListener('click', () => { primed = true; begin(); });
+  // элемент для голосов книги «разрешаем» прямо этим нажатием (на iPhone иначе мамин голос в книге не включится сам)
+  const SILENT = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  function unlockBookVoice() {
+    if (window.__svetaIntroVoice) return;
+    const v = new Audio();
+    v.src = SILENT;
+    v.play().then(() => { v.pause(); v.removeAttribute('src'); v.load(); }).catch(() => {});
+    window.__svetaIntroVoice = v;
+  }
+  startBtn.addEventListener('click', () => { primed = true; unlockBookVoice(); begin(); });
 
   // Касание заставки заранее «разрешает» звук: после поворота музыка включится без лишней кнопки.
   $('rotate').addEventListener('pointerdown', () => {
@@ -115,8 +124,10 @@
   });
 
   // ---------- поворот ----------
+  let handedOff = false;            // книга уже открыта поверх вступления — дальше музыкой управляет она
   function onOrientation() {
     toggleRotateFx();
+    if (handedOff) return;
     if (needRotate()) {
       if (state === 'playing' || state === 'ended') { pausedFrom = state; state = 'paused'; pauseAll(); }
       return;
@@ -132,6 +143,7 @@
   // вкладку свернули — пауза, вернулись — продолжаем
   let hiddenFrom = null;
   document.addEventListener('visibilitychange', () => {
+    if (handedOff) return;
     if (document.hidden) {
       if (state === 'playing' || state === 'ended') { hiddenFrom = state; state = 'paused'; pauseAll(); }
     } else if (hiddenFrom && state === 'paused' && !needRotate()) {
@@ -171,17 +183,27 @@
     if (BOOK_AT && state === 'playing' && video.currentTime >= BOOK_AT) { state = 'ended'; goToBook(); }
   });
 
-  // ---------- переход в книгу: музыка не обрывается — книга продолжит её с того же места ----------
+  // ---------- переход в книгу ----------
+  // Книга открывается НА ЭТОЙ ЖЕ странице (во весь экран поверх вступления), а не отдельной страницей:
+  // на iPhone звук разрешается только касанием в той же странице — при переходе на kniga.html музыка молчала.
+  // Песня вступления продолжает играть без паузы, книга берёт её себе (window.__svetaIntroMusic).
   let leaving = false;
   function goToBook() {
     if (leaving || state !== 'ended') return;
     leaving = true;
-    try {
-      if (soundWanted && !music.paused) sessionStorage.setItem('sveta-music-t', JSON.stringify({ t: music.currentTime + 1, at: Date.now() }));
-    } catch (e) { /* без хранилища книга просто начнёт песню сначала */ }
     $('leave').classList.add('is-on');
-    fadeTo(.25, .8);                 // музыку не гасим до нуля — в книге она подхватится без провала
-    setTimeout(() => { location.href = 'kniga.html'; }, 850);
+    fadeTo(.35, .8);
+    setTimeout(() => {
+      handedOff = true; fadeId++;    // вступление больше не трогает громкость
+      video.pause();
+      soundBtn.hidden = true;
+      window.__svetaIntroMusic = music;
+      const f = document.createElement('iframe');
+      f.className = 'book-frame'; f.title = 'Книга'; f.allow = 'autoplay; fullscreen'; f.setAttribute('allowfullscreen', '');
+      f.src = 'kniga.html?embed=1';
+      f.addEventListener('load', () => { f.classList.add('is-on'); try { f.contentWindow.focus(); } catch (e) { /* ничего */ } }, { once: true });
+      document.body.appendChild(f);
+    }, 850);
   }
   // вернулись кнопкой «Назад» из книги — страница могла восстановиться из кэша с тёмным экраном
   addEventListener('pageshow', (e) => {

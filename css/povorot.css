@@ -107,6 +107,12 @@ body { color: var(--cream); font-family: var(--serif); -webkit-tap-highlight-col
   opacity: 0; pointer-events: none; transition: opacity .8s ease;
 }
 .leave.is-on { opacity: 1; pointer-events: auto; }
+/* книга поверх вступления — во весь экран */
+.book-frame {
+  position: fixed; inset: 0; width: 100%; height: 100%; border: 0; z-index: 30; display: block;
+  background: #0b0a1f; opacity: 0; transition: opacity .7s ease;
+}
+.book-frame.is-on { opacity: 1; }
 
 .ui {
   position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));

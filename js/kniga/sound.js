@@ -1,16 +1,18 @@
 // Звук книги: одна фоновая музыка на всю книгу и один «голос» для записей мини-глав.
-// • Музыка создаётся один раз, играет по кругу и не перезапускается при переходах между главами.
-// • Если браузер запрещает звук без нажатия — музыка и ожидающий голос включаются при первом касании/клике/клавише.
-// • Пока звучит голос (или финальное видео), музыка плавно становится тише и потом возвращается.
-// Громкость музыки идёт через Web Audio (на iPhone свойство volume у <audio> не работает).
+// • Книга обычно открыта ВНУТРИ страницы вступления: тогда музыка — та же песня вступления (она не прерывается),
+//   а голос — элемент, который вступление уже «разрешило» нажатием «Начать историю». На iPhone звук можно включить
+//   только касанием в той же странице, поэтому иначе книга после вступления молчала.
+// • Открыта отдельно (kniga.html) — своя музыка; если браузер не даёт звук без нажатия, всё включится при первом касании.
+// • Пока звучит голос, музыка тише (где громкость управляется) или на паузе (iPhone: громкость <audio> там не меняется).
+//   Web Audio не используем: на iPhone он молчит в беззвучном режиме.
 
 const MUSIC_FILE = 'assets/audio/i-see-the-light.mp3';   // тот же трек, что во вступлении
 const MUSIC_VOL = .45;      // обычная громкость музыки
-const DUCK_VOICE = .06;     // доля от обычной, пока звучит голос (≈ в 16 раз тише — голос хорошо слышно)
+const DUCK_VOICE = .06;     // доля от обычной, пока звучит голос
 const DUCK_VIDEO = 0;       // пока играет финальное видео
 const MUTE_KEY = 'sveta-kniga-sound-off';
 
-// крошечный беззвучный wav — им «разрешаем» элемент голоса на iPhone при первом касании
+// крошечный беззвучный wav — им «разрешаем» элемент голоса при первом касании (если книга открыта отдельно)
 function silentWav() {
   const n = 800, b = new DataView(new ArrayBuffer(44 + n));
   const s = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
@@ -22,84 +24,87 @@ function silentWav() {
   return 'data:audio/wav;base64,' + btoa(str);
 }
 
+// элементы, которые передало вступление (книга открыта внутри него)
+function fromIntro(name) {
+  try { return window.parent !== window ? window.parent[name] || null : null; } catch (e) { return null; }
+}
+
 export function createSound() {
   if (window.__svetaSound) return window.__svetaSound;        // второй экземпляр не создаётся никогда
 
-  const music = new Audio();
-  music.loop = true;
-  music.preload = 'auto';
-  music.src = MUSIC_FILE;
-  music.volume = 0;
-  let musicMissing = false;
-  music.addEventListener('error', () => { musicMissing = true; console.info(`[kniga] музыка не найдена: ${MUSIC_FILE}`); });
-  // пришли из вступления — песня продолжается с того же места, а не начинается заново
-  try {
-    const from = JSON.parse(sessionStorage.getItem('sveta-music-t') || 'null');
-    sessionStorage.removeItem('sveta-music-t');
-    if (from && Date.now() - from.at < 60000 && from.t > 0) {
-      const t = from.t + (Date.now() - from.at) / 1000;
-      music.addEventListener('loadedmetadata', () => { if (music.duration) music.currentTime = t % music.duration; }, { once: true });
-    }
-  } catch (e) { /* ничего — начнём сначала */ }
+  const introMusic = fromIntro('__svetaIntroMusic');
+  const introVoice = fromIntro('__svetaIntroVoice');
 
-  const voice = new Audio();
+  const music = introMusic || new Audio();
+  music.loop = true;
+  let musicMissing = false;
+  if (!introMusic) {
+    music.preload = 'auto';
+    music.src = MUSIC_FILE;
+    music.volume = 0;
+    music.addEventListener('error', () => { musicMissing = true; console.info(`[kniga] музыка не найдена: ${MUSIC_FILE}`); });
+    // пришли из вступления старым способом (отдельной страницей) — песня продолжается с того же места
+    try {
+      const from = JSON.parse(sessionStorage.getItem('sveta-music-t') || 'null');
+      sessionStorage.removeItem('sveta-music-t');
+      if (from && Date.now() - from.at < 60000 && from.t > 0) {
+        const t = from.t + (Date.now() - from.at) / 1000;
+        music.addEventListener('loadedmetadata', () => { if (music.duration) music.currentTime = t % music.duration; }, { once: true });
+      }
+    } catch (e) { /* ничего — начнём сначала */ }
+  }
+
+  const voice = introVoice || new Audio();
   voice.preload = 'none';
   voice.volume = 1;
 
+  // можно ли менять громкость <audio>? (на iPhone — нет: volume всегда 1)
+  const probe = new Audio(); probe.volume = .5;
+  const volumeWorks = Math.abs(probe.volume - .5) < .01;
+
   let off = false;
   try { off = localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { /* без хранилища — звук включён */ }
+  if (off && introMusic) introMusic.pause();          // музыку в книге выключали раньше — песню вступления гасим
 
   // уровень музыки: 0..1 от MUSIC_VOL; меняется плавно
   const level = { v: 0, duck: 1 };
-  let ctx = null, gain = null;
   function apply() {
-    const v = off ? 0 : MUSIC_VOL * level.v * level.duck;
-    if (gain) gain.gain.value = v; else music.volume = Math.min(1, v);
-  }
-  function routeThroughWebAudio() {
-    if (ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    let c;
-    try { c = new AC(); } catch (e) { return; }
-    ctx = c;
-    // музыку переводим в Web Audio только когда он точно работает — иначе она бы замолчала
-    c.resume().then(() => {
-      if (c.state !== 'running' || gain) return;
-      try {
-        const src = c.createMediaElementSource(music);
-        gain = c.createGain();
-        src.connect(gain).connect(c.destination);
-        music.volume = 1;
-        apply();
-      } catch (e) { gain = null; }
-    }).catch(() => {});
+    if (!volumeWorks) return;
+    music.volume = Math.min(1, off ? 0 : MUSIC_VOL * level.v * level.duck);
   }
 
-  let duckers = new Set();
+  let started = false;
+  const duckers = new Set();
+  const resume = () => { if (!off && !musicMissing && started && !duckers.size && music.paused) music.play().catch(() => {}); };
   function setDuck(who, on) {
     if (on === duckers.has(who)) return;
     if (on) duckers.add(who); else duckers.delete(who);
     const target = duckers.has('video') ? DUCK_VIDEO : duckers.size ? DUCK_VOICE : 1;
-    // финальное видео: музыка не просто стихает, а ставится на паузу (на iPhone громкость <audio> не всегда управляется)
-    if (who === 'video' && !on && !off && started && music.paused) music.play().catch(() => {});
+    if (!volumeWorks) {                               // iPhone: тише сделать нельзя — ставим на паузу и продолжаем
+      if (duckers.size) music.pause(); else resume();
+      return;
+    }
+    if (!on) resume();
     gsap.to(level, {
       duck: target, duration: on ? .8 : 1.6, ease: 'sine.inOut', overwrite: 'auto', onUpdate: apply,
-      onComplete: () => { if (duckers.has('video')) music.pause(); }
+      onComplete: () => { if (duckers.has('video')) music.pause(); }        // во время финального видео музыка стоит
     });
   }
 
-  let started = false;
   function startMusic() {
     if (off || musicMissing) return;
-    if (!music.paused) return;
+    if (!music.paused) {                              // песня уже играет (из вступления) — просто подхватываем
+      if (!started) { started = true; level.v = .78; gsap.to(level, { v: 1, duration: 1.5, ease: 'sine.out', onUpdate: apply }); apply(); }
+      return;
+    }
     music.play().then(() => {
       if (!started) { started = true; gsap.to(level, { v: 1, duration: 2.5, ease: 'sine.out', onUpdate: apply }); }
+      else apply();
     }).catch(() => { /* ждём первого действия */ });
   }
 
   // голос: ждущая запись (браузер не дал включить сам) запускается при первом действии
-  let pendingVoice = false, unlocked = false;
+  let pendingVoice = false, unlocked = !!introVoice;
   function playVoice() {
     pendingVoice = false;
     if (!voice.getAttribute('src')) return;
@@ -118,10 +123,8 @@ export function createSound() {
 
   function unlock(e) {
     if (e && !e.isTrusted) return;                     // только настоящее действие человека
-    if (ctx && ctx.state === 'suspended') ctx.resume();
     if (!unlocked) {
       unlocked = true;
-      routeThroughWebAudio();
       if (!voice.getAttribute('src')) {                 // «разрешить» элемент голоса прямо в жесте
         voice.src = silentWav();
         voice.play().then(() => { if (voice.src.startsWith('data:')) { voice.pause(); voice.removeAttribute('src'); voice.load(); } syncVoiceDuck(); }).catch(() => {});
@@ -133,11 +136,17 @@ export function createSound() {
   }
   for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, unlock, { capture: true, passive: true });
 
+  // свернули вкладку — музыка ждёт; вернулись — продолжает (если не выключена и не идёт голос/видео)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (started) music.pause(); }
+    else resume();
+  });
+
   function setOff(v) {
     off = v;
     try { localStorage.setItem(MUTE_KEY, v ? '1' : '0'); } catch (e) { /* ничего */ }
     if (off) { music.pause(); apply(); }
-    else { startMusic(); apply(); }
+    else { startMusic(); resume(); apply(); }
   }
 
   const api = {
@@ -146,7 +155,7 @@ export function createSound() {
     playVoice, stopVoice, setDuck,
     get off() { return off; }, setOff,
     get pendingVoice() { return pendingVoice; },
-    debug: () => ({ musicPaused: music.paused, musicTime: music.currentTime, level: level.v, duck: level.duck, gain: gain ? gain.gain.value : music.volume, webAudio: !!gain, ctxState: ctx ? ctx.state : null, voicePaused: voice.paused, voiceSrc: voice.getAttribute('src'), pendingVoice, off })
+    debug: () => ({ musicPaused: music.paused, musicTime: music.currentTime, level: level.v, duck: level.duck, volume: music.volume, volumeWorks, fromIntro: !!introMusic, voicePaused: voice.paused, voiceSrc: voice.getAttribute('src'), pendingVoice, off })
   };
   window.__svetaSound = api;
   return api;
