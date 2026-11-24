@@ -2,7 +2,7 @@
 // по пути встаёт из горизонтали в вертикаль и разворачивается лицом к зрителю.
 // Снимок «проявляется» из золотых искр (шейдер растворения), вокруг — тёплое свечение.
 import * as THREE from 'three';
-import { placeholderTexture, blobTexture, haloTexture, polaroidTexture, envelopeTexture, stickerTexture, coverTexture2 } from './textures.js';
+import { placeholderTexture, blobTexture, haloTexture, polaroidTexture, envelopeTexture, stickerTexture, coverTexture2 } from './textures.js?v=20261124202948';
 
 const CARD_T = .012;       // толщина карточки-полароида
 const DEG = Math.PI / 180;

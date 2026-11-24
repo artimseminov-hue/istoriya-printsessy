@@ -4,7 +4,7 @@
    и не обрывается после него (выключается только window.SvetaMusic.stop() перед поздравлением). */
 (async function () {
   const $ = (id) => document.getElementById(id);
-  const data = await fetch('data/vstuplenie.json').then((r) => r.json());
+  const data = await fetch('data/vstuplenie.json?v=20261124202948').then((r) => r.json());
   const T = data.texts, M = data.music;
 
   $('rotateTitle').textContent = T.rotateTitle;
@@ -200,7 +200,7 @@
       window.__svetaIntroMusic = music;
       const f = document.createElement('iframe');
       f.className = 'book-frame'; f.title = 'Книга'; f.allow = 'autoplay; fullscreen'; f.setAttribute('allowfullscreen', '');
-      f.src = 'kniga.html?embed=1';
+      f.src = 'kniga.html?embed=1&v=20261124202948';
       f.addEventListener('load', () => {
         f.classList.add('is-on');
         try { f.contentWindow.focus(); } catch (e) { /* ничего */ }

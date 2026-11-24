@@ -1,7 +1,7 @@
 // Стол, свет и частицы. Тёплая «лампа» слева светит конусом: книга в пятне света, края стола уходят в темноту.
 // Частиц немного: пылинки над книгой, несколько размытых огоньков ближе к камере (глубина) и всплески при появлении фото.
 import * as THREE from 'three';
-import { woodTexture, sparkTexture, bokehTexture } from './textures.js';
+import { woodTexture, sparkTexture, bokehTexture } from './textures.js?v=20261124202948';
 
 const NIGHT = 0x0b0a1f;
 

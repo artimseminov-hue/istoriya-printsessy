@@ -3,7 +3,7 @@
 // изогнутые к корешку страницы и шёлковая лента-закладка.
 // Книга лежит в плоскости XZ, корешок — вдоль оси Z при x = 0, страницы смотрят в +Y.
 import * as THREE from 'three';
-import { pageTexture, paperBump, pageEdgeTexture, coverTexture, leatherBump, giltTexture } from './textures.js';
+import { pageTexture, paperBump, pageEdgeTexture, coverTexture, leatherBump, giltTexture } from './textures.js?v=20261124202948';
 
 export const PAGE_W = 1.5;    // ширина одной страницы
 export const PAGE_D = 2.0;    // высота страницы (вдоль Z)

@@ -4,15 +4,15 @@
 // Весь контент — в site/content/content.js (см. CONTENT_GUIDE.md), код здесь менять не нужно.
 // Состояния: intro → opening → gallery ⇄ focus → closing/flipping → … → final.
 import * as THREE from 'three';
-import { pickQuality, lower } from './quality.js';
-import { createWorld } from './scene.js';
-import { createBook, createPageFlip, surfaceY, PAGE_W, PAGE_D } from './book.js';
-import { createPanel } from './photo.js';
-import { createGallery } from './gallery.js';
-import { createNote } from './note.js';
-import { createRig } from './camera.js';
-import { buildStory, loadProgress, saveProgress, resetProgress, nextItem, chapterDone } from './story.js';
-import { createSound } from './sound.js';
+import { pickQuality, lower } from './quality.js?v=20261124202948';
+import { createWorld } from './scene.js?v=20261124202948';
+import { createBook, createPageFlip, surfaceY, PAGE_W, PAGE_D } from './book.js?v=20261124202948';
+import { createPanel } from './photo.js?v=20261124202948';
+import { createGallery } from './gallery.js?v=20261124202948';
+import { createNote } from './note.js?v=20261124202948';
+import { createRig } from './camera.js?v=20261124202948';
+import { buildStory, loadProgress, saveProgress, resetProgress, nextItem, chapterDone } from './story.js?v=20261124202948';
+import { createSound } from './sound.js?v=20261124202948';
 
 const $ = (id) => document.getElementById(id);
 const RENDER = new URLSearchParams(location.search).has('render');

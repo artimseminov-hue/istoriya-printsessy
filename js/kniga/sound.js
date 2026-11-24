@@ -94,7 +94,7 @@ export function createSound() {
   }
 
   function startMusic() {
-    if (off || musicMissing) return;
+    if (off || musicMissing || duckers.size) return;  // пока звучит голос или видео — музыку не включаем
     if (!music.paused) {                              // песня уже играет (из вступления) — просто подхватываем
       if (!started) { started = true; level.v = .78; gsap.to(level, { v: 1, duration: 1.5, ease: 'sine.out', onUpdate: apply }); apply(); }
       return;
@@ -132,7 +132,9 @@ export function createSound() {
         voice.play().then(() => { if (voice.src.startsWith('data:')) { voice.pause(); voice.removeAttribute('src'); voice.load(); } syncVoiceDuck(); }).catch(() => {});
       }
     }
-    startMusic();
+    // первое касание — запускает музыку; следующие касания только возвращают её, если она не на паузе
+    // из-за голоса (раньше любое касание включало музыку поверх голоса)
+    if (started) resume(); else startMusic();
     // ждущий голос — чуть позже: если это нажатие закрывает мини-главу, запись успеет отмениться
     if (pendingVoice) setTimeout(() => { if (pendingVoice) playVoice(); }, 60);
   }

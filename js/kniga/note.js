@@ -1,7 +1,7 @@
 // Записка с воспоминанием: старая бумага с неровными краями, рукописный текст (Caveat),
 // заголовок Marck Script, золотой завиток и сургучная печать. Текст «пишется» плавно, у листа есть тень и лёгкий изгиб.
 import * as THREE from 'three';
-import { rng, star, blobTexture } from './textures.js';
+import { rng, star, blobTexture } from './textures.js?v=20261124202948';
 
 const CW = 1024;
 const PAD = 100;

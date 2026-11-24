@@ -2,7 +2,7 @@
 // из книги поднимается тёплый луч.
 // Вся дуга поворачивается вокруг зрителя, как карусель (свайп / перетаскивание).
 import * as THREE from 'three';
-import { rng, beamTexture } from './textures.js';
+import { rng, beamTexture } from './textures.js?v=20261124202948';
 
 const DEG = Math.PI / 180;
 export const VIEWER = new THREE.Vector3(0, 1.45, 5.2);    // точка, к которой повёрнуты все панели
