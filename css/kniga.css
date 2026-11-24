@@ -110,3 +110,6 @@ body { color: var(--cream); font-family: var(--serif); -webkit-tap-highlight-col
 .invite-arrow { font-family: var(--serif); font-size: 1.2em; color: #ffe3a3; text-shadow: 0 0 10px rgba(242, 196, 109, .9); animation: bob 1.1s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(7px); } }
 @media (prefers-reduced-motion: reduce) { .invite-arrow { animation: none; } }
+/* над карточкой нет места — подсказка под ней, стрелка вверх */
+.invite.below { transform: translate(-50%, 0); flex-direction: column-reverse; }
+.invite.below .invite-arrow { transform: rotate(180deg); animation: none; }

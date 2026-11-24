@@ -95,6 +95,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     document.body.classList.toggle('compact', isCompact());
     document.body.classList.toggle('compact-land', isCompactLand());
     document.body.classList.toggle('compact-port', isCompact() && !isCompactLand());
+    document.body.classList.toggle('compact-tiny', isCompact() && innerHeight < 320);
   }
   syncCompact();
   // записка на телефоне — настоящий текст (крупный, с прокруткой), а не картинка в 3D-сцене, которую приходилось уменьшать
@@ -179,6 +180,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
   const spreadFor = (ch) => { const n = nextItem(ch, viewed); return n ? n.spread : Math.max(0, ch.spreads.length - 1); };
 
   function destroySpread() {
+    document.body.classList.remove('story-open');
     if (gallery) gallery.dispose();
     for (const p of panels) p.dispose();
     panels = []; gallery = null; byId = {}; pickables = []; active = null; current = null;
@@ -415,12 +417,14 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
   function storyLayoutCompact(st) {
     const W = innerWidth, H = innerHeight, it = st.card.data;
     const land = isCompactLand(), hasSide = !!(it.text || it.audio), multi = st.panels.length > 1;
-    const gap = 10, navH = multi ? 46 : 0, rowH = 56, playerH = it.audio ? 64 : 0;
+    const tiny = H < 320;                           // Safari с панелями вкладок оставляет странице ~230 px высоты
+    const gap = 10, navH = multi ? (tiny ? 40 : 46) : 0, rowH = tiny ? 42 : 50, playerH = it.audio ? (tiny ? 50 : 62) : 0;
     let photo, side = null;
     if (land) {
       const split = hasSide ? Math.round(W * .56) : W;
-      photo = { x: gap, y: 8, w: split - gap * 1.5, h: H - 8 - (multi ? navH + 4 : rowH + 8) };
-      if (hasSide) side = { x: split + gap * .5, y: 58, w: W - split - gap * 1.5 - 4, h: H - 58 - rowH - 12 };
+      const sideTop = tiny ? 8 : 58;                // на низком экране кнопка музыки уезжает вниз влево (CSS)
+      photo = { x: gap, y: 6, w: split - gap * 1.5, h: H - 6 - (multi ? navH + 2 : rowH + 8) };
+      if (hasSide) side = { x: split + gap * .5, y: sideTop, w: W - split - gap * 1.5 - 4, h: H - sideTop - rowH - 18 };
     } else {
       const top = 62, ctrlH = rowH + navH + 18;
       const ph = hasSide ? Math.round((H - top - ctrlH) * .5) : H - top - ctrlH;
@@ -440,7 +444,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     });
     let noteRect = null, playerAt = null;
     if (side) {
-      if (it.text) noteRect = { x: side.x, y: side.y, w: side.w, h: side.h - playerH, paper: true };
+      if (it.text) noteRect = { x: side.x, y: side.y, w: side.w, h: side.h - (playerH ? playerH + 8 : 0), paper: true };
       if (it.audio) playerAt = { x: side.x + side.w / 2, y: noteRect ? null : side.y + side.h / 2, w: Math.min(side.w, 420) };
     }
     // стрелки — сразу под фото; «Продолжить» — внизу правой колонки (боком) или по центру
@@ -455,6 +459,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       const t = L.targets[i];
       if (animate) gsap.to(p.L, { ...t, duration: 1, ease: 'power3.inOut', overwrite: true });
       else Object.assign(p.L, t);
+      gsap.to(p.state, { reveal: !isCompact() || i === st.main ? 1 : 0, duration: animate ? .6 : .01 });
       gsap.to(p.state, { focus: i === st.main ? 1 : 0, duration: animate ? .9 : .01, overwrite: 'auto' });
     });
     // записка: ширина подбирается так, чтобы текст целиком поместился в отведённое место
@@ -479,7 +484,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       st.noteShown = true;
     }
     if (L.playerAt) {
-      const y = L.playerAt.y ?? (st.noteBottomPx + (isCompact() ? 10 + 28 : 16 + 30));
+      const y = L.playerAt.y ?? (st.noteBottomPx + (isCompact() ? 8 + (ui.player.offsetHeight || 56) / 2 : 16 + 30));
       Object.assign(ui.player.style, { left: L.playerAt.x + 'px', top: y + 'px', width: L.playerAt.w + 'px' });
     }
     ui.photoInfo.textContent = st.panels.length > 1 ? `${st.main + 1} / ${st.panels.length}` : '';
@@ -487,6 +492,10 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
 
   async function openStory(card) {
     const it = card.data;
+    if (isCompact()) {
+      document.body.classList.add('story-open');
+      for (const o of panels) if (o !== card) gsap.to(o.state, { reveal: 0, duration: .8, ease: 'sine.in' });
+    }
     const { shot } = focusLayout(card, null);
     const D = 2.6;
     const fly = rig.flyTo(shot, { duration: D, ease: 'power2.inOut', arc: .2 });
@@ -605,6 +614,8 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     show(ui.player, false);
     st.panels.forEach((p, i) => gsap.to(p.state, { out: 0, focus: 0, duration: 1.1, ease: 'power2.in', delay: i * .05 }));
     gsap.to(st.card.state, { reveal: 1, duration: 1.1, ease: 'sine.out', delay: .5 });
+    document.body.classList.remove('story-open');
+    for (const o of panels) if (o !== st.card) gsap.to(o.state, { reveal: 1, duration: 1, ease: 'sine.out', delay: .4 });
     st.closing = true;
     closingStory = st;
     await wait(1.3 + st.panels.length * .05);
@@ -1052,8 +1063,15 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     if (!active) return;
     const g = active.group;
     _iv.set(0, active.outerH / 2 + .04, 0).applyQuaternion(g.quaternion).multiplyScalar(g.scale.x).add(g.position).project(camera);
-    ui.invite.style.left = ((_iv.x + 1) / 2 * innerWidth) + 'px';
-    ui.invite.style.top = ((1 - _iv.y) / 2 * innerHeight) + 'px';
+    let top = (1 - _iv.y) / 2 * innerHeight;
+    const below = top - (ui.invite.offsetHeight || 60) < 6;
+    if (below) {
+      _iv.set(0, -active.outerH / 2 - .04, 0).applyQuaternion(g.quaternion).multiplyScalar(g.scale.x).add(g.position).project(camera);
+      top = Math.min((1 - _iv.y) / 2 * innerHeight, innerHeight - (ui.invite.offsetHeight || 60) - 6);
+    }
+    ui.invite.classList.toggle('below', below);
+    ui.invite.style.left = Math.max(70, Math.min(innerWidth - 70, (_iv.x + 1) / 2 * innerWidth)) + 'px';
+    ui.invite.style.top = top + 'px';
   }
 
   // ---------- размер окна ----------
