@@ -1,0 +1,112 @@
+/* 3D-книга: интерфейс поверх сцены в стиле книги — синяя кожа обложки, золотое тиснение, рукописные шрифты. */
+:root {
+  --night: #0b0a1f;
+  --leather: #1b2350;
+  --leather-dark: #121838;
+  --gold: #e3b866;
+  --gold-soft: #ffe3a3;
+  --cream: #fbf3e2;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --script: "Marck Script", "Cormorant Garamond", cursive;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; background: var(--night); overflow: hidden; }
+body { color: var(--cream); font-family: var(--serif); -webkit-tap-highlight-color: transparent; }
+
+#scene { position: fixed; inset: 0; width: 100vw; height: 100svh; display: block; touch-action: pan-y pinch-zoom; }   /* горизонтальные свайпы ловит книга */
+.vignette {
+  position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(6, 5, 18, .62) 100%);
+}
+
+/* подсказка — золотая рукописная строка, без плашки */
+.hint {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: max-content; max-width: 92vw; text-align: center;
+  font: 400 clamp(1.15rem, 3.4vmin, 1.6rem) var(--script); color: var(--gold-soft);
+  text-shadow: 0 0 14px rgba(242, 196, 109, .55), 0 2px 6px rgba(0, 0, 0, .6);
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.hint::before, .hint::after { content: "✦"; font-size: .7em; margin: 0 .7em; color: var(--gold); opacity: .8; vertical-align: .15em; }
+
+.controls {
+  position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: max-content; max-width: 94vw;
+  opacity: 0; visibility: hidden;
+}
+.controls-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: center; }
+
+/* главная кнопка — как тиснёная кожаная накладка на обложке */
+.btn-book {
+  position: relative; display: inline-flex; align-items: center; gap: .55em;
+  min-height: 48px; padding: .5em 1.6em; cursor: pointer;
+  font: 400 clamp(1.25rem, 3.6vmin, 1.6rem) var(--script); color: var(--gold-soft);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .5), 0 0 10px rgba(242, 196, 109, .35);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(120, 140, 230, .22), transparent 70%),
+    linear-gradient(180deg, #24306a, var(--leather) 55%, var(--leather-dark));
+  border: 1.5px solid var(--gold); border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px var(--leather), inset 0 0 0 4px rgba(227, 184, 102, .55),
+    0 8px 24px rgba(0, 0, 0, .45), 0 0 22px rgba(242, 196, 109, .18);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.btn-book:hover { box-shadow: inset 0 0 0 3px var(--leather), inset 0 0 0 4px rgba(227, 184, 102, .8), 0 10px 28px rgba(0, 0, 0, .5), 0 0 30px rgba(242, 196, 109, .35); }
+.btn-book:active { transform: scale(.97); }
+.btn-book .orn { font-family: var(--serif); font-size: .85em; color: var(--gold); opacity: .85; }
+.btn-book .orn.flip { transform: scaleX(-1); }
+
+/* второстепенная — тихая золотая надпись */
+.btn-quiet {
+  min-height: 44px; padding: 0 .6em; cursor: pointer; background: none; border: 0;
+  font: italic 500 clamp(1.05rem, 3vmin, 1.25rem) var(--serif); color: var(--gold-soft);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .7);
+  border-bottom: 1px solid rgba(227, 184, 102, .45);
+}
+.btn-quiet:hover { color: #fff1c9; border-bottom-color: var(--gold); }
+.btn-book:focus-visible, .btn-quiet:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 4px; }
+
+.loading {
+  position: fixed; inset: 0; display: grid; place-items: center; background: var(--night);
+  color: var(--gold); font-size: 2rem; pointer-events: none;
+}
+.loading span { animation: pulse 1.6s ease-in-out infinite; text-shadow: 0 0 18px rgba(242, 196, 109, .8); }
+@keyframes pulse { 50% { opacity: .35; transform: scale(.85); } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sr-only:focus-within { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: auto; height: auto; clip: auto; z-index: 5; display: flex; gap: 8px; }
+.sr-only button { font: 500 1rem var(--serif); padding: 6px 12px; border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .loading span { animation: none; }
+}
+
+/* панели кнопок галереи */
+.bar {
+  position: fixed; left: 50%; bottom: max(54px, calc(env(safe-area-inset-bottom) + 44px)); transform: translateX(-50%);
+  opacity: 0; visibility: hidden;
+}
+.bar-top { bottom: auto; top: max(12px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); transform: none; }
+#openBtn { animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 50% { box-shadow: inset 0 0 0 3px var(--leather), inset 0 0 0 4px rgba(227, 184, 102, .8), 0 8px 24px rgba(0, 0, 0, .45), 0 0 34px rgba(242, 196, 109, .4); } }
+@media (prefers-reduced-motion: reduce) { #openBtn { animation: none; } }
+
+/* «Нажми сюда» над приглашённым фото (позицию задаёт main.js) */
+.invite {
+  position: fixed; left: 50%; top: 40%; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  pointer-events: none; opacity: 0; visibility: hidden;
+  font: 400 clamp(1.3rem, 3.6vmin, 1.9rem) var(--script); color: #fff3d6;
+  text-shadow: 0 0 12px rgba(242, 196, 109, .9), 0 0 28px rgba(242, 196, 109, .55), 0 2px 6px rgba(0, 0, 0, .6);
+  white-space: nowrap;
+}
+.invite-text {
+  padding: .12em .8em .2em; border-radius: 999px;
+  background: linear-gradient(180deg, rgba(36, 48, 106, .9), rgba(18, 24, 56, .9));
+  border: 1.5px solid rgba(227, 184, 102, .85);
+  box-shadow: 0 0 18px rgba(242, 196, 109, .45), 0 6px 16px rgba(0, 0, 0, .45);
+}
+.invite-arrow { font-family: var(--serif); font-size: 1.2em; color: #ffe3a3; text-shadow: 0 0 10px rgba(242, 196, 109, .9); animation: bob 1.1s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(7px); } }
+@media (prefers-reduced-motion: reduce) { .invite-arrow { animation: none; } }

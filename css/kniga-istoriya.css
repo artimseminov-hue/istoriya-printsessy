@@ -1,0 +1,162 @@
+/* История по главам: название главы, подсказки, аудиоплеер, письмо, оглавление, финал с видео.
+   Дополняет kniga.css (подключается после него). */
+
+.chapter-label {
+  position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  max-width: 56vw; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: italic 500 clamp(.9rem, 2.4vmin, 1.1rem) var(--serif); color: var(--gold-soft); opacity: 0;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .7); pointer-events: none;
+}
+#galleryBar { display: flex; gap: 14px; z-index: 12; }   /* оглавление доступно и на финале */
+
+/* название главы при перелистывании */
+.chapter-card {
+  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .3em; text-align: center; pointer-events: none; opacity: 0; visibility: hidden; padding: 0 6vw;
+  background: radial-gradient(ellipse at 50% 50%, rgba(11, 10, 31, .55), rgba(11, 10, 31, 0) 65%);
+}
+.cc-num { font: italic 500 clamp(1rem, 3vmin, 1.3rem) var(--serif); color: var(--gold-soft); letter-spacing: .2em; text-transform: uppercase; opacity: .85; }
+.cc-title {
+  font: 400 clamp(2rem, 7vmin, 3.6rem) var(--script); color: #fff1cf; line-height: 1.15;
+  text-shadow: 0 0 24px rgba(242, 196, 109, .7), 0 3px 10px rgba(0, 0, 0, .6);
+}
+.cc-orn { color: var(--gold); font-size: 1.4rem; text-shadow: 0 0 12px rgba(242, 196, 109, .9); }
+
+/* короткие сообщения */
+.toast {
+  position: fixed; left: 50%; top: 16%; transform: translateX(-50%); max-width: 86vw; text-align: center;
+  padding: .45em 1.2em; border-radius: 999px; pointer-events: none; opacity: 0; visibility: hidden;
+  font: italic 500 clamp(1rem, 3vmin, 1.2rem) var(--serif); color: var(--gold-soft);
+  background: rgba(18, 24, 56, .85); border: 1px solid rgba(227, 184, 102, .55);
+}
+
+/* аудиоплеер в стиле книги */
+.player {
+  display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; width: min(400px, 88vw);
+  border-radius: 999px; border: 1.5px solid rgba(227, 184, 102, .8);
+  background: linear-gradient(180deg, rgba(251, 243, 226, .96), rgba(232, 214, 178, .96));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+}
+.player[hidden], .letter-nav[hidden] { display: none; }
+.pl-btn {
+  width: 44px; height: 44px; flex: none; border-radius: 50%; cursor: pointer; border: 0;
+  font-size: 1.1rem; color: #fff1c9; background: radial-gradient(circle at 35% 30%, #2c3a7a, #121838);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.pl-body { flex: 1; min-width: 0; }
+.pl-caption { font: 600 1.1rem "Caveat", var(--script); color: #5a3a1c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-caption:empty { display: none; }
+.pl-bar { height: 8px; border-radius: 999px; background: rgba(120, 80, 40, .2); cursor: pointer; margin-top: 4px; }
+.pl-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #d9a441, #f2c46d); }
+.pl-time { font: 500 .95rem var(--serif); color: #5a3a1c; min-width: 3.2em; text-align: right; }
+.player.missing .pl-btn { opacity: .45; cursor: default; }
+
+/* листание письма */
+.letter-nav { display: flex; align-items: center; gap: 12px; }
+.letter-nav .btn-quiet { font-size: 1.6rem; border-bottom: 0; padding: 0 .5em; }
+.letter-nav .btn-quiet:disabled { opacity: .3; cursor: default; }
+.lp-info { font: italic 500 1.05rem var(--serif); color: var(--gold-soft); text-shadow: 0 2px 6px rgba(0, 0, 0, .7); }
+
+/* оглавление — лист старой бумаги */
+.menu { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(6, 5, 18, .6); padding: 16px; }
+.menu[hidden] { display: none; }
+.menu-sheet {
+  width: min(520px, 100%); max-height: 90svh; overflow: auto; padding: 22px 26px 18px; border-radius: 14px;
+  background: linear-gradient(180deg, #fbf3e0, #ecd9b4); color: #4a2e14;
+  box-shadow: inset 0 0 0 2px rgba(194, 149, 74, .7), inset 0 0 0 7px #fbf3e0, inset 0 0 0 8px rgba(194, 149, 74, .5), 0 18px 50px rgba(0, 0, 0, .6);
+}
+.menu-title { font: 400 2rem var(--script); color: #8a5824; text-align: center; margin-bottom: 10px; }
+.menu-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.menu-list button {
+  width: 100%; display: flex; align-items: baseline; gap: 10px; text-align: left; cursor: pointer;
+  padding: 10px 12px; border-radius: 10px; border: 0; background: rgba(255, 255, 255, .35);
+  font: 500 1.1rem var(--serif); color: #4a2e14;
+}
+.menu-list button:hover:not(:disabled) { background: rgba(242, 196, 109, .3); }
+.menu-list button:disabled { opacity: .5; cursor: default; }
+.menu-list .m-num { font: 400 1.2rem var(--script); color: #a8772f; min-width: 1.4em; }
+.menu-list .m-title { flex: 1; }
+.menu-list .m-state { font-style: italic; font-size: .95rem; color: #8a6a44; white-space: nowrap; }
+.menu-list .current { box-shadow: inset 0 0 0 1.5px rgba(194, 149, 74, .8); }
+.menu-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.menu-foot .btn-quiet { color: #8a5824; text-shadow: none; border-bottom-color: rgba(138, 88, 36, .4); font-size: 1rem; }
+
+/* финал: старинная рамка с видео */
+.final {
+  position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1.6svh; padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  background: radial-gradient(ellipse at 50% 45%, rgba(40, 32, 70, .55), rgba(6, 5, 18, .88) 75%);
+  opacity: 0;
+}
+.final[hidden] { display: none; }
+.final-title { font: 400 clamp(1.8rem, 6vmin, 3.2rem) var(--script); color: #fff1cf; text-align: center; text-shadow: 0 0 24px rgba(242, 196, 109, .7); }
+.final-text { font: italic 500 clamp(1rem, 2.8vmin, 1.25rem) var(--serif); color: var(--cream); opacity: .85; text-align: center; max-width: 40em; }
+.final-text:empty { display: none; }
+.frame {
+  width: min(92vw, calc((100svh - 190px) * 16 / 9), 1100px); aspect-ratio: 16 / 9; padding: clamp(8px, 1.6vmin, 18px);
+  border-radius: 10px; position: relative;
+  background: linear-gradient(135deg, #f7d98e, #b8862f 30%, #f2cf7c 55%, #9c6d22 80%, #e8c06a);
+  box-shadow: 0 0 0 2px #6b4a16, 0 0 40px rgba(242, 196, 109, .45), 0 20px 50px rgba(0, 0, 0, .6);
+}
+.frame::before { content: ""; position: absolute; inset: 5px; border-radius: 7px; border: 1.5px solid rgba(255, 245, 210, .7); pointer-events: none; }
+.frame-inner { position: relative; width: 100%; height: 100%; border-radius: 4px; overflow: hidden; background: #0d0b1c; box-shadow: inset 0 0 18px rgba(0, 0, 0, .8); }
+.frame-inner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.frame-inner video[hidden] { display: none; }
+.cover {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4em;
+  border: 0; cursor: pointer; color: #fff1cf; background-size: cover; background-position: center;
+  background-color: #1a1740;
+  background-image: radial-gradient(ellipse at 50% 40%, rgba(58, 52, 116, .9) 0%, rgba(26, 23, 64, .9) 55%, rgba(13, 11, 28, .95) 100%);
+}
+.cover[hidden] { display: none; }
+.cover-star { color: var(--gold); font-size: clamp(1.2rem, 4vmin, 2rem); text-shadow: 0 0 14px rgba(242, 196, 109, .9); }
+.cover-title { font: 400 clamp(1.6rem, 5.5vmin, 3rem) var(--script); text-shadow: 0 0 20px rgba(242, 196, 109, .6); }
+.cover-play {
+  width: clamp(54px, 10vmin, 84px); aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%;
+  font-size: clamp(1.3rem, 3.6vmin, 2rem); padding-left: .15em;
+  background: radial-gradient(circle at 35% 30%, #2c3a7a, #121838); box-shadow: inset 0 0 0 2px var(--gold), 0 0 24px rgba(242, 196, 109, .5);
+}
+.cover-hint { font: italic 500 clamp(.95rem, 2.6vmin, 1.15rem) var(--serif); color: var(--gold-soft); opacity: .85; }
+.cover.missing { cursor: default; }
+.cover.missing .cover-play { opacity: .35; }
+
+/* ошибка в content.js */
+.problems {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 30; max-width: 92vw;
+  padding: 10px 16px; border-radius: 10px; background: #fbf3e0; color: #7a1d1d; font: 500 1rem var(--serif);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+.problems[hidden] { display: none; }
+
+/* телефон боком: плеер и кнопка в один ряд — больше места для фото и записки */
+@media (max-height: 520px) {
+  .controls { flex-direction: row; gap: 14px; }
+  .player { width: min(330px, 48vw); padding: 6px 12px 6px 6px; }
+  .pl-btn { width: 38px; height: 38px; }
+}
+
+/* мини-глава: плеер стоит под запиской справа; на телефоне боком стрелки фото и «Продолжить» — в один ряд */
+.player.floating { position: fixed; z-index: 6; transform: translate(-50%, -50%); opacity: 0; visibility: hidden; }
+#photoNav .btn-quiet { font-size: 1.8rem; }
+
+/* пауза автосмены фото — рядом со стрелками */
+#photoNav .ph-auto { font-size: 1rem; letter-spacing: -.1em; margin-left: .4em; opacity: .75; }
+#photoNav .ph-auto.paused { opacity: 1; color: #fff1c9; }
+
+/* кнопка музыки — вверху справа */
+.sound-btn {
+  position: fixed; z-index: 13; top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right));
+  width: 40px; height: 40px; border-radius: 50%; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
+  background: rgba(40, 22, 12, .55); border: 1px solid rgba(227, 184, 102, .55);
+  color: #f2d9a0; font: 1.25rem/1 "Cormorant Garamond", serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+  transition: opacity .3s, border-color .3s;
+}
+.sound-btn:hover { border-color: #e3b866; color: #fff1c9; }
+.sound-btn:focus-visible { outline: 2px solid rgba(242, 196, 109, .8); outline-offset: 3px; }
+.sound-btn .sb-note, .sound-btn .sb-slash { grid-area: 1 / 1; }
+.sound-btn .sb-slash { width: 26px; height: 2px; background: currentColor; transform: rotate(-45deg); opacity: 0; transition: opacity .3s; }
+.sound-btn.off { opacity: .7; }
+.sound-btn.off .sb-slash { opacity: 1; }
+@media (max-height: 520px) { .sound-btn { width: 34px; height: 34px; font-size: 1.05rem; } }

@@ -1,0 +1,201 @@
+/* Вступление-видео и заставка «переверни телефон». Цвета и шрифты — как в intro.css. */
+:root {
+  --night: #171a3a;
+  --night-deep: #0e0d24;
+  --evening: #2b3a67;
+  --gold: #f2c46d;
+  --gold-soft: #ffe3a3;
+  --cream: #fbf3e2;
+  --serif: "Cormorant Garamond", Georgia, serif;
+  --script: "Marck Script", "Cormorant Garamond", cursive;
+  --fade: .9s;
+}
+
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; background: var(--night-deep); overflow: hidden; }
+body { color: var(--cream); font-family: var(--serif); -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+
+/* ---------- кино: видео 16:9 целиком ---------- */
+.cinema {
+  position: fixed; inset: 0; width: 100vw; height: 100svh; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, #1c1d44 0%, var(--night-deep) 75%);
+}
+.intro-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain;            /* пропорции 16:9: без растяжения и без обрезки */
+  background: transparent; display: block;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.intro-video.is-on { opacity: 1; }
+
+/* ---------- стартовый экран ---------- */
+.start {
+  position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3.5svh; padding: 0 8vw; text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, rgba(43, 51, 102, .92) 0%, rgba(23, 26, 58, .96) 75%);
+  transition: opacity var(--fade) ease;
+}
+.start.is-leaving { opacity: 0; pointer-events: none; }
+.start-title {
+  font-family: var(--script); font-size: clamp(2.2rem, 7vmin, 4.4rem); line-height: 1.1;
+  color: var(--gold-soft); text-shadow: 0 0 24px rgba(242, 196, 109, .55);
+}
+.start-hint { font-size: clamp(.95rem, 3vmin, 1.15rem); opacity: .72; font-style: italic; }
+
+/* анимация перед стартом: телефон ложится горизонтально → звук включается (цикл 5 с) */
+.steps { display: flex; gap: clamp(28px, 9vmin, 90px); align-items: flex-start; justify-content: center; animation: rise 1.2s .2s ease both; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 1.2svh; }
+.st-ico {
+  width: clamp(64px, 19vmin, 132px); height: auto; overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(242, 196, 109, .45));
+}
+.step-text { font-style: italic; font-weight: 500; font-size: clamp(.95rem, 3.2vmin, 1.2rem); color: var(--cream); opacity: .85; max-width: 11em; line-height: 1.2; }
+.st-phone-body { transform-box: view-box; transform-origin: 60px 60px; animation: lay 5s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes lay {
+  0%, 12% { transform: rotate(0deg); }
+  32%, 88% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+.st-arc { fill: none; stroke: var(--gold-soft); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; animation: arcShow 5s ease-in-out infinite; }
+@keyframes arcShow { 0%, 4% { opacity: 0; } 10%, 28% { opacity: .9; } 38%, 100% { opacity: 0; } }
+.spk { fill: rgba(23, 26, 58, .85); stroke: var(--gold); stroke-width: 4; stroke-linejoin: round; }
+.mute { fill: none; stroke: var(--gold-soft); stroke-width: 5; stroke-linecap: round; animation: muteOff 5s ease infinite; }
+@keyframes muteOff { 0%, 36% { opacity: .9; } 42%, 92% { opacity: 0; } 100% { opacity: .9; } }
+.wave { fill: none; stroke: var(--gold-soft); stroke-width: 5; stroke-linecap: round; opacity: 0; }
+.w1 { animation: wave1 5s ease infinite; }
+.w2 { animation: wave2 5s ease infinite; }
+.w3 { animation: wave3 5s ease infinite; }
+@keyframes wave1 { 0%, 42% { opacity: 0; } 47%, 90% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes wave2 { 0%, 50% { opacity: 0; } 55%, 90% { opacity: .85; } 96%, 100% { opacity: 0; } }
+@keyframes wave3 { 0%, 58% { opacity: 0; } 63%, 90% { opacity: .7; } 96%, 100% { opacity: 0; } }
+/* на компьютере (есть мышь) поворачивать нечего — остаётся только «включи звук» */
+@media (hover: hover) and (pointer: fine) { .step-phone { display: none; } }
+/* низкий экран горизонтального телефона — всё чуть плотнее */
+@media (max-height: 430px) {
+  .start { gap: 2.6svh; }
+  .start-title { font-size: clamp(1.8rem, 8vmin, 2.6rem); }
+}
+
+.btn {
+  font: 600 clamp(1.1rem, 3.6vmin, 1.35rem) var(--serif); letter-spacing: .02em;
+  padding: .85em 2em; border-radius: 999px; border: 0; cursor: pointer; min-height: 48px;
+}
+.btn-gold {
+  color: #3a2410; background: linear-gradient(180deg, #ffe7a8, #e9b65c);
+  box-shadow: 0 0 0 1px rgba(255, 240, 200, .6) inset, 0 6px 24px rgba(242, 196, 109, .45);
+  animation: btnGlow 2.8s ease-in-out infinite;
+}
+.btn-gold:active { transform: scale(.97); }
+@keyframes btnGlow {
+  50% { box-shadow: 0 0 0 1px rgba(255, 240, 200, .7) inset, 0 6px 34px rgba(242, 196, 109, .75); }
+}
+
+.replay {
+  position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 2; background: rgba(20, 22, 52, .55); border: 1px solid rgba(255, 236, 190, .35);
+  border-radius: 999px; padding: 0 20px; min-height: 44px; cursor: pointer;
+  font: italic 500 clamp(1rem, 3vmin, 1.15rem) var(--serif); color: var(--gold-soft);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: appear 1.2s ease both;
+}
+@keyframes appear { from { opacity: 0; } }
+
+/* затемнение при переходе в книгу */
+.leave {
+  position: fixed; inset: 0; z-index: 20; background: #0b0a1c;
+  opacity: 0; pointer-events: none; transition: opacity .8s ease;
+}
+.leave.is-on { opacity: 1; pointer-events: auto; }
+
+.ui {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+  z-index: 3;
+}
+.icon-btn {
+  width: 44px; height: 44px; border-radius: 999px; cursor: pointer; display: grid; place-items: center;
+  border: 1px solid rgba(255, 236, 190, .35); background: rgba(20, 22, 52, .45);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: appear 1s ease both;
+}
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn .note { fill: var(--gold-soft); }
+.icon-btn .slash { stroke: var(--gold-soft); stroke-width: 2; stroke-linecap: round; }
+.icon-btn[aria-pressed="true"] .slash { display: none; }
+
+/* ---------- заставка «переверни телефон» ---------- */
+.rotate {
+  position: fixed; inset: 0; z-index: 10; overflow: hidden;
+  display: grid; place-items: center; padding: 8vh 9vw; text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 38%, #2f3a72 0%, #1d2050 45%, var(--night-deep) 100%);
+  /* по умолчанию скрыта: телефон уже горизонтально, планшет или компьютер */
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity var(--fade) ease, visibility 0s linear var(--fade);
+}
+.rotate .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.rotate-glow {
+  position: absolute; left: 50%; top: 38%; width: 120vmin; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(242, 196, 109, .22) 0%, rgba(242, 196, 109, .06) 35%, transparent 65%);
+  animation: breathe 5s ease-in-out infinite;
+}
+@keyframes breathe { 50% { opacity: .6; transform: translate(-50%, -50%) scale(1.06); } }
+
+.rotate-body { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4.5vh; }
+.phone-wrap { position: relative; width: min(42vw, 190px); aspect-ratio: 1; display: grid; place-items: center; }
+.phone {
+  width: 46%; overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(242, 196, 109, .55)) drop-shadow(0 0 28px rgba(242, 196, 109, .25));
+  animation: turn 4.2s cubic-bezier(.65, 0, .35, 1) infinite;
+}
+.phone-body { fill: rgba(23, 26, 58, .85); stroke: var(--gold); stroke-width: 2.4; }
+.phone-ear { fill: var(--gold); opacity: .7; }
+.phone-star { fill: var(--gold-soft); }
+.phone-light { animation: twinkle 2.1s ease-in-out infinite; }
+@keyframes twinkle { 50% { opacity: .45; } }
+@keyframes turn {
+  0%, 20% { transform: rotate(0deg); }
+  45%, 78% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+.phone-arrow {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  fill: none; stroke: var(--gold-soft); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+  transform: scaleX(-1);           /* дуга против часовой стрелки, как поворот телефона */
+  animation: arrow 4.2s ease-in-out infinite;
+}
+@keyframes arrow {
+  0%, 6% { opacity: 0; }
+  16%, 42% { opacity: .85; }
+  56%, 100% { opacity: 0; }
+}
+.rotate-title {
+  font-family: var(--script); font-weight: 400;
+  font-size: clamp(1.9rem, 8.4vw, 2.6rem); line-height: 1.2;
+  color: var(--gold-soft); text-shadow: 0 0 22px rgba(242, 196, 109, .55);
+  max-width: 15em; animation: rise 1.4s .2s ease both;
+}
+.rotate-note {
+  font-style: italic; font-weight: 500; font-size: clamp(1.05rem, 4.4vw, 1.25rem);
+  color: var(--cream); opacity: .75; animation: rise 1.4s .7s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+/* Телефон в вертикальном положении: сенсорный экран, без мыши, узкий.
+   Планшеты (шире 600 px) и компьютеры сюда не попадают. То же условие проверяет povorot.js. */
+@media (orientation: portrait) and (hover: none) and (pointer: coarse) and (max-width: 600px) {
+  .rotate {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transition: opacity var(--fade) ease, visibility 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone { animation: none; transform: rotate(-90deg); }
+  .phone-arrow, .rotate-glow, .btn-gold { animation: none; }
+  .st-phone-body { animation: none; transform: rotate(-90deg); }
+  .st-arc, .mute { animation: none; opacity: 0; }
+  .wave { animation: none; opacity: .85; }
+  .rotate .fx { display: none; }
+}

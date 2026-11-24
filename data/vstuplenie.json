@@ -1,0 +1,27 @@
+{
+  "texts": {
+    "rotateTitle": "Для начала этой истории переверни свой телефон…",
+    "rotateNote": "Обещаю, дальше будет волшебство",
+    "startTitle": "Это история одной принцессы",
+    "startButton": "Начать историю",
+    "resumeButton": "Продолжить историю",
+    "startHint": "История начнётся с музыкой — проверь, что телефон не на беззвучном",
+    "replay": "Посмотреть ещё раз",
+    "startSteps": ["Поверни телефон горизонтально", "Включи звук"],
+    "soundOn": "Выключить музыку",
+    "soundOff": "Включить музыку"
+  },
+  "video": {
+    "_comment": "Вступление 16:9 (копия art/montazh/Probnyi_montazh_v2_gorizont.mp4). Видео играет без звука, музыка идёт отдельной дорожкой синхронно с ним.",
+    "file": "assets/video/vstuplenie.mp4",
+    "poster": "assets/video/vstuplenie_poster.webp",
+    "bookOpenAt": 13.0
+  },
+  "music": {
+    "_comment": "«I See the Light» играет с начала истории и до поздравления; выключается вызовом window.SvetaMusic.stop().",
+    "file": "assets/audio/i-see-the-light.mp3",
+    "volume": 0.7,
+    "fadeIn": 2,
+    "fadeOut": 3
+  }
+}

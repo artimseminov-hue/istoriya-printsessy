@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a1f">
+  <title>Это история одной принцессы</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2l3.5 10.5L30 16l-10.5 3.5L16 30l-3.5-10.5L2 16l10.5-3.5z%27 fill=%27%23f2c46d%27/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Marck+Script&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/kniga.css">
+  <link rel="stylesheet" href="css/kniga-istoriya.css">
+  <!-- Three.js и GSAP лежат в проекте (site/vendor), без CDN и сборщика -->
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js" } }
+  </script>
+  <script src="vendor/gsap/gsap.min.js"></script>
+  <!-- весь контент книги: главы, фото, тексты, голос, письмо, видео -->
+  <script src="content/content.js"></script>
+</head>
+<body>
+  <canvas id="scene" aria-label="Раскрытая книга с фотографиями"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- название текущей главы (маленькое, сверху) -->
+  <p class="chapter-label" id="chapterLabel"></p>
+  <p class="hint" id="hint"></p>
+
+  <!-- подсказка над следующим фото -->
+  <div class="invite" id="invite" aria-hidden="true"><span class="invite-text">Нажми сюда</span><span class="invite-arrow">↓</span></div>
+
+  <!-- книга: раскрыть воспоминания (если галерея закрыта) -->
+  <div class="bar" id="openBar">
+    <button class="btn-book" id="openBtn" type="button"><span class="orn" aria-hidden="true">✦</span>Раскрыть воспоминания<span class="orn" aria-hidden="true">✦</span></button>
+  </div>
+  <!-- оглавление -->
+  <div class="bar bar-top" id="galleryBar">
+    <button class="btn-quiet" id="contentsBtn" type="button"><span aria-hidden="true">☰</span> Оглавление</button>
+    <button class="btn-quiet" id="closeBtn" type="button" hidden>‹ Вернуть в книгу</button>
+  </div>
+  <!-- разворот или глава прочитаны: перевернуть страницу -->
+  <!-- музыка: выключить / включить -->
+  <button class="sound-btn" id="soundBtn" type="button" aria-label="Выключить музыку"><span class="sb-note" aria-hidden="true">♪</span><span class="sb-slash" aria-hidden="true"></span></button>
+
+  <div class="bar" id="turnBar">
+    <button class="btn-book" id="turnBtn" type="button"></button>
+  </div>
+
+  <!-- под открытым воспоминанием -->
+  <!-- голос к мини-главе: стоит под текстом воспоминания (место задаёт main.js) -->
+  <div class="player floating" id="player" hidden>
+    <button class="pl-btn" id="plBtn" type="button" aria-label="Слушать">▶</button>
+    <div class="pl-body">
+      <p class="pl-caption" id="plCaption"></p>
+      <div class="pl-bar" id="plBar" role="slider" aria-label="Перемотка" tabindex="0"><div class="pl-fill" id="plFill"></div></div>
+    </div>
+    <span class="pl-time" id="plTime">0:00</span>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="letter-nav" id="photoNav" hidden>
+      <button class="btn-quiet" id="phPrev" type="button" aria-label="Предыдущее фото">‹</button>
+      <span class="lp-info" id="photoInfo"></span>
+      <button class="btn-quiet" id="phNext" type="button" aria-label="Следующее фото">›</button>
+      <button class="btn-quiet ph-auto" id="phAuto" type="button" aria-label="Остановить показ фото">❚❚</button>
+    </div>
+    <div class="letter-nav" id="letterNav" hidden>
+      <button class="btn-quiet" id="lpPrev" type="button" aria-label="Предыдущая страница письма">‹</button>
+      <span class="lp-info" id="lpInfo"></span>
+      <button class="btn-quiet" id="lpNext" type="button" aria-label="Следующая страница письма">›</button>
+    </div>
+    <div class="controls-row">
+      <button class="btn-book" id="continueBtn" type="button"><span class="orn" aria-hidden="true">❧</span>Продолжить<span class="orn flip" aria-hidden="true">❧</span></button>
+      <button class="btn-quiet" id="nextBtn" type="button" hidden>Следующее воспоминание <span aria-hidden="true">›</span></button>
+    </div>
+  </div>
+
+  <!-- название главы при перелистывании -->
+  <div class="chapter-card" id="chapterCard" aria-live="polite">
+    <p class="cc-num" id="ccNum"></p>
+    <h2 class="cc-title" id="ccTitle"></h2>
+    <p class="cc-orn" aria-hidden="true">✦</p>
+  </div>
+
+  <!-- короткие сообщения -->
+  <p class="toast" id="toast" role="status"></p>
+
+  <!-- оглавление -->
+  <div class="menu" id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle" hidden>
+    <div class="menu-sheet">
+      <h2 class="menu-title" id="menuTitle">Оглавление</h2>
+      <ol class="menu-list" id="menuList"></ol>
+      <div class="menu-foot">
+        <button class="btn-quiet" id="menuReset" type="button">Начать книгу сначала</button>
+        <button class="btn-book" id="menuClose" type="button">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- финал: видеообращение в старинной рамке -->
+  <div class="final" id="final" hidden>
+    <h2 class="final-title" id="finalTitle"></h2>
+    <p class="final-text" id="finalText"></p>
+    <div class="frame">
+      <div class="frame-inner">
+        <video id="finalVideo" playsinline preload="metadata" controls hidden></video>
+        <button class="cover" id="finalCover" type="button">
+          <span class="cover-star" aria-hidden="true">✦</span>
+          <span class="cover-title">Для тебя, Света</span>
+          <span class="cover-play" aria-hidden="true">▶</span>
+          <span class="cover-hint" id="coverHint">Нажми, чтобы посмотреть</span>
+        </button>
+      </div>
+    </div>
+    <button class="btn-quiet final-back" id="finalBack" type="button">‹ Вернуться к книге</button>
+  </div>
+
+  <!-- если в content.js ошибка -->
+  <div class="problems" id="problems" hidden></div>
+
+  <!-- для чтения с клавиатуры и экранного диктора -->
+  <nav class="sr-only" id="srList" aria-label="Фотографии на развороте"></nav>
+  <p class="sr-only" id="srNote" aria-live="polite"></p>
+
+  <div class="loading" id="loading"><span>✦</span></div>
+
+  <script type="module" src="js/kniga/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171a3a">
+  <title>Это история одной принцессы</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Cpath d=%27M16 2l3.5 10.5L30 16l-10.5 3.5L16 30l-3.5-10.5L2 16l10.5-3.5z%27 fill=%27%23f2c46d%27/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Marck+Script&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/povorot.css">
+</head>
+<body>
+  <main class="cinema" id="cinema" aria-label="Вступление">
+    <!-- Видео 16:9: целиком, без растяжения и обрезки -->
+    <video class="intro-video" id="video" muted playsinline webkit-playsinline preload="auto"></video>
+
+    <!-- Стартовый экран: всегда перед началом. Анимация: телефон ложится горизонтально, звук включается.
+         Нажатие «Начать историю» заодно разрешает браузеру звук. -->
+    <section class="start" id="start" hidden>
+      <p class="start-title" id="startTitle"></p>
+      <div class="steps">
+        <div class="step step-phone">
+          <svg class="st-ico st-phone" viewBox="0 0 120 120" aria-hidden="true">
+            <g class="st-phone-body">
+              <rect x="38" y="16" width="44" height="88" rx="9" class="phone-body"/>
+              <rect x="43" y="25" width="34" height="70" rx="3" fill="#2b3a67"/>
+              <path d="M60 50l2.2 6.3 6.3 2.2-6.3 2.2L60 67l-2.2-6.3-6.3-2.2 6.3-2.2z" class="phone-star"/>
+              <rect x="54" y="19.5" width="12" height="2.2" rx="1.1" class="phone-ear"/>
+            </g>
+            <path class="st-arc" d="M24 40 A42 42 0 0 1 58 12"/>
+            <path class="st-arc st-tip" d="M48 8 L59 12 L52 21"/>
+          </svg>
+          <p class="step-text" id="stepPhone"></p>
+        </div>
+        <div class="step step-sound">
+          <svg class="st-ico st-sound" viewBox="0 0 120 120" aria-hidden="true">
+            <path class="spk" d="M22 48h16l22-18v60L38 72H22z"/>
+            <path class="mute" d="M74 48l22 24M96 48L74 72"/>
+            <path class="wave w1" d="M72 50a14 14 0 0 1 0 20"/>
+            <path class="wave w2" d="M81 40a28 28 0 0 1 0 40"/>
+            <path class="wave w3" d="M90 30a42 42 0 0 1 0 60"/>
+          </svg>
+          <p class="step-text" id="stepSound"></p>
+        </div>
+      </div>
+      <button class="btn btn-gold" id="startBtn" type="button"></button>
+      <p class="start-hint" id="startHint"></p>
+    </section>
+
+    <!-- После вступления сайт сам переходит в книгу (затемнение — .leave) -->
+    <button class="btn-link replay" id="replayBtn" type="button" hidden></button>
+    <div class="leave" id="leave" aria-hidden="true"></div>
+
+    <div class="ui">
+      <button class="icon-btn" id="soundBtn" type="button" aria-pressed="false" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="note" d="M9 18a3 3 0 1 1-2-2.83V5l12-2v11.17A3 3 0 1 1 17 12V6.3L9 7.6z"/><path class="slash" d="M3 3l18 18"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- Заставка «переверни телефон»: только телефон в вертикальном положении -->
+  <section class="rotate" id="rotate" aria-live="polite">
+    <canvas class="fx" id="fx" aria-hidden="true"></canvas>
+    <div class="rotate-glow" aria-hidden="true"></div>
+    <div class="rotate-body">
+      <div class="phone-wrap" aria-hidden="true">
+        <svg class="phone-arrow" viewBox="0 0 120 120">
+          <path d="M28 30 A44 44 0 0 1 96 44" />
+          <path class="tip" d="M88 34 L97 45 L83 49" />
+        </svg>
+        <svg class="phone" viewBox="0 0 64 112">
+          <defs>
+            <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2b3a67"/><stop offset="1" stop-color="#171a3a"/>
+            </linearGradient>
+            <radialGradient id="glow" cx=".5" cy=".55" r=".5">
+              <stop offset="0" stop-color="#ffe3a3" stop-opacity=".9"/><stop offset="1" stop-color="#ffe3a3" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect x="2" y="2" width="60" height="108" rx="11" class="phone-body"/>
+          <rect x="7" y="11" width="50" height="90" rx="4" fill="url(#scr)"/>
+          <ellipse cx="32" cy="62" rx="20" ry="16" fill="url(#glow)" class="phone-light"/>
+          <path d="M32 50l2.6 7.4 7.4 2.6-7.4 2.6L32 70l-2.6-7.4L22 60l7.4-2.6z" class="phone-star"/>
+          <rect x="25" y="5" width="14" height="2.4" rx="1.2" class="phone-ear"/>
+        </svg>
+      </div>
+      <h1 class="rotate-title" id="rotateTitle"></h1>
+      <p class="rotate-note" id="rotateNote"></p>
+    </div>
+  </section>
+
+  <audio id="music" preload="auto" loop></audio>
+
+  <script src="js/particles.js"></script>
+  <script src="js/povorot.js"></script>
+</body>
+</html>
