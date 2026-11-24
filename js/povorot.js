@@ -142,13 +142,25 @@
   // ---------- видео и музыка вместе ----------
   // перематывать музыку можно, только если сервер это позволяет (иначе песня начиналась бы заново)
   const canSeek = (t) => music.seekable.length > 0 && music.seekable.end(music.seekable.length - 1) >= t;
+  // Музыка живёт отдельно от видео: не ставится на паузу, когда видео догружается, и не перематывается
+  // постоянно (на iPhone частые перемотки звука и паузы мешали видео вообще стартовать).
+  // Подстраиваем её под картинку только при заметном расхождении — больше 1,5 с.
   video.addEventListener('timeupdate', () => {
-    if (state === 'playing' && !music.paused && Math.abs(music.currentTime - video.currentTime) > .3 && canSeek(video.currentTime)) {
+    if (state === 'playing' && !music.paused && !music.seeking && Math.abs(music.currentTime - video.currentTime) > 1.5 && canSeek(video.currentTime)) {
       music.currentTime = video.currentTime;
     }
   });
-  video.addEventListener('waiting', () => { if (state === 'playing') music.pause(); });     // видео догружается
   video.addEventListener('playing', () => { if (state === 'playing' && soundWanted && music.paused && primed) startMusic(.4).catch(() => {}); });
+
+  // Страховка: если видео после нажатия не тронулось за 8 с или застряло на 8 с — сразу в книгу
+  let lastT = -1, stuckSince = 0;
+  setInterval(() => {
+    if (state !== 'playing' || leaving || document.hidden) { stuckSince = 0; return; }
+    const t = video.currentTime;
+    if (Math.abs(t - lastT) > .05) { lastT = t; stuckSince = 0; return; }
+    if (!stuckSince) { stuckSince = Date.now(); return; }
+    if (Date.now() - stuckSince > 8000) { state = 'ended'; goToBook(); }
+  }, 500);
   video.addEventListener('ended', () => {
     state = 'ended';                 // последний кадр — раскрытая книга; музыка играет дальше
     goToBook();                      // и сразу в книгу — без кнопки
