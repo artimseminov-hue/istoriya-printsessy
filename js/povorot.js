@@ -166,7 +166,7 @@
 
   // Страховка: если видео после нажатия не тронулось за 8 с или застряло на 8 с — сразу в книгу
   let lastT = -1, stuckSince = 0;
-  setInterval(() => {
+  const watchdog = setInterval(() => {
     if (state !== 'playing' || leaving || document.hidden) { stuckSince = 0; return; }
     const t = video.currentTime;
     if (Math.abs(t - lastT) > .05) { lastT = t; stuckSince = 0; return; }
@@ -201,7 +201,17 @@
       const f = document.createElement('iframe');
       f.className = 'book-frame'; f.title = 'Книга'; f.allow = 'autoplay; fullscreen'; f.setAttribute('allowfullscreen', '');
       f.src = 'kniga.html?embed=1';
-      f.addEventListener('load', () => { f.classList.add('is-on'); try { f.contentWindow.focus(); } catch (e) { /* ничего */ } }, { once: true });
+      f.addEventListener('load', () => {
+        f.classList.add('is-on');
+        try { f.contentWindow.focus(); } catch (e) { /* ничего */ }
+        // вступление больше не нужно: освобождаем видео и всё, что рисуется под книгой (иначе на телефоне подтормаживало)
+        setTimeout(() => {
+          clearInterval(watchdog);
+          FX.halt();
+          video.removeAttribute('src'); video.removeAttribute('poster'); video.load();
+          for (const el of [$('cinema'), $('rotate'), $('leave')]) if (el) el.style.display = 'none';
+        }, 900);
+      }, { once: true });
       document.body.appendChild(f);
     }, 850);
   }

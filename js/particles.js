@@ -33,8 +33,9 @@
     parts.push(p);
   }
 
-  let last = performance.now();
+  let last = performance.now(), running = true;
   function frame(now) {
+    if (!running) return;                       // остановлено навсегда (книга открылась поверх вступления)
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     ctx.clearRect(0, 0, W, H);
 
@@ -80,7 +81,8 @@
     emitter(name, opts) { emitters[name] = Object.assign(emitters[name] || {}, opts); },
     stop(name) { if (emitters[name]) emitters[name].on = false; },
     burst(pos, n, kind) { for (let i = 0; i < n; i++) spawn({ pos: () => pos, kind: kind || 'spark', spread: 40 }); },
-    clear() { parts.length = 0; for (const k in emitters) emitters[k].on = false; }
+    clear() { parts.length = 0; for (const k in emitters) emitters[k].on = false; },
+    halt() { running = false; parts.length = 0; ctx.clearRect(0, 0, W, H); }
   };
 
   window.addEventListener('resize', resize);

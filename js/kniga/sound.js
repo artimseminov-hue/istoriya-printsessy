@@ -58,9 +58,11 @@ export function createSound() {
   voice.preload = 'none';
   voice.volume = 1;
 
-  // можно ли менять громкость <audio>? (на iPhone — нет: volume всегда 1)
+  // можно ли менять громкость <audio>? На iPhone/iPad — нет: свойство volume там может «принимать» значение,
+  // но звук от этого тише не становится. Поэтому на них музыка под голосом ставится на паузу.
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const probe = new Audio(); probe.volume = .5;
-  const volumeWorks = Math.abs(probe.volume - .5) < .01;
+  const volumeWorks = !isIOS && Math.abs(probe.volume - .5) < .01;
 
   let off = false;
   try { off = localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { /* без хранилища — звук включён */ }
