@@ -160,3 +160,68 @@
 .sound-btn.off { opacity: .7; }
 .sound-btn.off .sb-slash { opacity: 1; }
 @media (max-height: 520px) { .sound-btn { width: 34px; height: 34px; font-size: 1.05rem; } }
+
+/* ======================= ТЕЛЕФОН (класс .compact ставит main.js: меньшая сторона экрана ≤ 500 px) =======================
+   Компьютер этих правил не видит. */
+
+/* записка воспоминания — настоящий текст на старой бумаге: крупно, с прокруткой, без уменьшения шрифта */
+.paper {
+  position: fixed; z-index: 6; display: flex; flex-direction: column;
+  border-radius: 6px 9px 7px 10px; color: #4a2e16; opacity: 0; visibility: hidden;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 252, 240, .9), transparent 55%),
+    radial-gradient(ellipse at 85% 95%, rgba(196, 150, 84, .28), transparent 60%),
+    linear-gradient(175deg, #f8edd3, #efdcb4 70%, #e6cd9d);
+  box-shadow: inset 0 0 0 1px rgba(160, 112, 50, .35), inset 0 0 26px rgba(150, 100, 40, .25), 0 10px 28px rgba(0, 0, 0, .55);
+  transform: rotate(-.4deg);
+}
+.paper[hidden] { display: none; }
+.paper-seal {
+  position: absolute; top: -9px; left: -9px; width: 32px; height: 32px; border-radius: 50%; z-index: 1;
+  display: grid; place-items: center; font-size: 1rem; color: #ffd9a0;
+  background: radial-gradient(circle at 35% 30%, #c8443a, #8e1f1a 70%); box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+}
+.paper-scroll {
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+  padding: 16px 20px 14px; min-height: 0; scrollbar-width: none;
+  /* внизу текст мягко «уходит» — видно, что можно листать дальше */
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent);
+          mask-image: linear-gradient(180deg, #000 calc(100% - 18px), transparent);
+}
+.paper-title { font: 400 1.6rem/1.15 var(--script); color: #8a5824; margin: 0 0 8px; }
+.paper-title:empty { display: none; }
+.paper-scroll::-webkit-scrollbar { display: none; }
+.paper-text p { font: 600 1.28rem/1.36 "Caveat", var(--script); margin: 0 0 .45em; }
+.paper-author { font: 400 1.15rem var(--script); color: #8a5824; text-align: right; margin-top: 4px; }
+.paper-author:empty { display: none; }
+
+.compact .sound-btn { width: 44px; height: 44px; font-size: 1.25rem; }
+.compact .chapter-label { font-size: 1rem; max-width: 50vw; }
+.compact .letter-nav .btn-quiet { min-width: 44px; min-height: 44px; }
+.compact #photoNav .btn-quiet { font-size: 2rem; }
+.compact #photoNav .ph-auto { font-size: 1.05rem; }
+.compact .lp-info { font-size: 1.1rem; }
+.compact .player { padding: 6px 14px 6px 6px; }
+.compact .pl-btn { width: 44px; height: 44px; }
+.compact .pl-caption { font-size: 1.2rem; }
+.compact .pl-time { font-size: 1rem; }
+.compact .btn-book { font-size: 1.3rem; }
+
+/* телефон боком: панель кнопок растягивается на весь экран (без transform), а её части стоят там, куда их ставит main.js:
+   стрелки фото — под фото, «Продолжить» — внизу правой колонки (или по центру, если колонки нет) */
+.compact-land .controls {
+  left: 0; top: 0; right: 0; bottom: 0; width: auto; max-width: none; transform: none; pointer-events: none;
+}
+.compact-land .controls > * { pointer-events: auto; position: absolute; transform: translateX(-50%); }
+.compact-land #photoNav { left: var(--nav-x, 50vw); top: var(--nav-y, auto); bottom: var(--nav-b, auto); }
+.compact-land #letterNav { left: 50vw; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 60px); }
+.compact-land .controls-row { left: var(--row-x, 50vw); bottom: max(10px, env(safe-area-inset-bottom)); flex-wrap: nowrap; }
+.compact-land .controls-row .btn-book { white-space: nowrap; }
+
+/* финал на телефоне: видео как можно крупнее */
+.compact .final { gap: 1vh; }
+.compact .final-title { font-size: clamp(1.5rem, 6vmin, 2rem); }
+.compact .final-text { display: none; }
+.compact .frame { width: min(94vw, calc((100svh - 104px) * 16 / 9)); padding: 7px; }
+.compact .cover-title { font-size: clamp(1.4rem, 6vmin, 2rem); }
+.compact #finalBack { min-height: 44px; }

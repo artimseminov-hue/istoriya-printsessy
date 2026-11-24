@@ -475,9 +475,10 @@ export function stickerTexture() {
   return colorTex(c);
 }
 
-// ---------- фото «вписать» в окно полароида: обрезка по центру, не больше 1024 px ----------
+// ---------- фото «вписать» в окно полароида: обрезка по центру, в полном разрешении файла (до 2048 px) ----------
+// Раньше было не больше 1024 px — на телефоне с экраном ×3 открытое фото выглядело мыльным.
 export function coverTexture2(img, w, h) {
-  const MAX = 1024;
+  const MAX = Math.min(2048, Math.max(img.naturalWidth, img.naturalHeight, 512));
   const W = w >= h ? MAX : Math.round(MAX * w / h), H = w >= h ? Math.round(MAX * h / w) : MAX;
   const [c, x] = canvas(W, H);
   const s = Math.max(W / img.naturalWidth, H / img.naturalHeight);

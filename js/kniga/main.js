@@ -82,10 +82,49 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     card: $('chapterCard'), ccNum: $('ccNum'), ccTitle: $('ccTitle'), toast: $('toast'),
     menu: $('menu'), menuList: $('menuList'), menuReset: $('menuReset'), menuClose: $('menuClose'),
     final: $('final'), finalTitle: $('finalTitle'), finalText: $('finalText'), video: $('finalVideo'), cover: $('finalCover'), coverHint: $('coverHint'), finalBack: $('finalBack'),
-    live: $('srNote'), list: $('srList')
+    live: $('srNote'), list: $('srList'),
+    paper: $('paper'), paperScroll: $('paperScroll'), paperTitle: $('paperTitle'), paperText: $('paperText'), paperAuthor: $('paperAuthor')
   };
   const show = (el, on, d) => gsap.to(el, { autoAlpha: on ? 1 : 0, duration: d ?? (on ? .9 : .35), ease: 'sine.out', overwrite: true });
   const hint = (text) => { if (text) ui.hint.textContent = text; show(ui.hint, !!text); };
+
+  // ---------- телефон: своя раскладка (меньшая сторона экрана ≤ 500 px); компьютер её не видит ----------
+  const isCompact = () => Math.min(innerWidth, innerHeight) <= 500;
+  const isCompactLand = () => isCompact() && innerWidth / innerHeight >= 1.15;
+  function syncCompact() {
+    document.body.classList.toggle('compact', isCompact());
+    document.body.classList.toggle('compact-land', isCompactLand());
+    document.body.classList.toggle('compact-port', isCompact() && !isCompactLand());
+  }
+  syncCompact();
+  // записка на телефоне — настоящий текст (крупный, с прокруткой), а не картинка в 3D-сцене, которую приходилось уменьшать
+  let paperKey = '';
+  function setPaper(content, rect) {
+    const key = [content.title, content.text, content.author].join('|');
+    if (key !== paperKey) {
+      paperKey = key;
+      ui.paperTitle.textContent = content.title || '';
+      ui.paperText.replaceChildren(...String(content.text || '').split(/\n+/).filter((t) => t.trim()).map((t) => {
+        const el = document.createElement('p'); el.textContent = t.trim(); return el;
+      }));
+      ui.paperAuthor.textContent = content.author || '';
+      ui.paperScroll.scrollTop = 0;
+    }
+    ui.paper.hidden = false;
+    Object.assign(ui.paper.style, { left: rect.x + 'px', top: rect.y + 'px', width: rect.w + 'px', maxHeight: rect.h + 'px' });
+    return ui.paper.offsetHeight;                    // настоящая высота (если текст короткий — меньше места)
+  }
+  function revealPaper(delay = 0) { gsap.fromTo(ui.paper, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .9, delay, ease: 'power2.out', overwrite: true }); }
+  function hidePaper() {
+    if (ui.paper.hidden) return;
+    gsap.to(ui.paper, { autoAlpha: 0, duration: .4, ease: 'sine.in', overwrite: true, onComplete: () => { ui.paper.hidden = true; } });
+  }
+  // где стоят стрелки фото и «Продолжить» на телефоне боком (main.js ставит, CSS читает)
+  function placeControls(navX, navY, rowX) {
+    const c = ui.controls.style;
+    if (navX == null) { c.removeProperty('--nav-x'); c.removeProperty('--nav-y'); c.removeProperty('--row-x'); return; }
+    c.setProperty('--nav-x', navX + 'px'); c.setProperty('--nav-y', navY + 'px'); c.setProperty('--row-x', rowX + 'px');
+  }
   let toastCall = null;
   function toast(text, sec = 2.6) {
     ui.toast.textContent = text; show(ui.toast, true, .4);
@@ -99,11 +138,12 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     BOOK_PTS.push(new THREE.Vector3(sx * PAGE_W * .96, .21, sz * PAGE_D / 2));
   }
   for (const sx of [-1, 1]) BOOK_FRONT.push(new THREE.Vector3(sx * (PAGE_W + .14), 0, PAGE_D / 2 + .11), new THREE.Vector3(sx * .9, .2, .2));
-  const bottomInset = () => (ui.controls.offsetHeight || 60) + 34;
+  const bottomInset = () => (isCompactLand() ? 70 : (ui.controls.offsetHeight || 60) + 34);
   const bookShot = () => rig.fit(BOOK_PTS, new THREE.Vector3(0, 1, .8), { top: 40, bottom: 90, left: 46, right: 46 });
   const topShot = () => rig.fit(BOOK_PTS, new THREE.Vector3(0, 1, .02), { top: 16, bottom: 16, left: 16, right: 16 });
   const finalShot = () => rig.fit(BOOK_PTS, new THREE.Vector3(0, .45, 1), { top: 60, bottom: 60, left: 30, right: 30 });
-  const galleryShot = () => rig.fit(gallery.framePoints(BOOK_FRONT), new THREE.Vector3(0, .2, 1), { top: 44, bottom: 80, left: 24, right: 24 });
+  const galleryShot = () => rig.fit(gallery.framePoints(BOOK_FRONT), new THREE.Vector3(0, .2, 1),
+    isCompact() ? { top: 50, bottom: 34, left: 8, right: 8 } : { top: 44, bottom: 80, left: 24, right: 24 });
 
   // кадр на фото + место для записки (широкий экран — сбоку, к центру галереи; узкий — снизу); без записки — фото по центру
   const NOTE_GAP = .08;
@@ -148,8 +188,9 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     destroySpread();
     chIdx = ci; spIdx = si;
     const items = tale.chapters[ci].spreads[si] || [];
+    const K = isCompact() ? 1.3 : 1;                  // на телефоне карточки в галерее крупнее
     panels = items.map((it, i) => createPanel({
-      ...it, kind: it.kind === 'letter' ? 'letter' : 'photo', page: pageSpot(i, items.length),
+      ...it, w: it.w * K, h: it.h * K, kind: it.kind === 'letter' ? 'letter' : 'photo', page: pageSpot(i, items.length),
       caption: it.kind === 'letter' ? '' : it.title, stack: Math.min(2, Math.max(0, (it.photos || []).length - 1))
     }, quality, surfaceY));
     for (const p of panels) {
@@ -319,6 +360,8 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
 
   // где что стоит (в пикселях): главное фото, ряд остальных, записка, плеер
   function storyLayout(st) {
+    if (isCompact()) return storyLayoutCompact(st);
+    placeControls(null);
     const W = innerWidth, H = innerHeight, it = st.card.data;
     const top = 26, bottom = (ui.controls.offsetHeight || 60) + 26, gap = Math.max(10, Math.min(W, H) * .025);
     const hasSide = !!(it.text || it.audio);
@@ -366,6 +409,46 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     return { targets, noteRect, playerAt };
   }
 
+  // ТЕЛЕФОН. Главное — фото: оно занимает всю высоту (боком) или верхнюю половину (вертикально).
+  // Остальные фото мини-главы прячутся «стопкой» за главным — листать стрелками, свайпом или автоматически.
+  // Записка — текстом справа (боком) или под фото (вертикально), под ней плеер; «Продолжить» — внизу колонки.
+  function storyLayoutCompact(st) {
+    const W = innerWidth, H = innerHeight, it = st.card.data;
+    const land = isCompactLand(), hasSide = !!(it.text || it.audio), multi = st.panels.length > 1;
+    const gap = 10, navH = multi ? 46 : 0, rowH = 56, playerH = it.audio ? 64 : 0;
+    let photo, side = null;
+    if (land) {
+      const split = hasSide ? Math.round(W * .56) : W;
+      photo = { x: gap, y: 8, w: split - gap * 1.5, h: H - 8 - (multi ? navH + 4 : rowH + 8) };
+      if (hasSide) side = { x: split + gap * .5, y: 58, w: W - split - gap * 1.5 - 4, h: H - 58 - rowH - 12 };
+    } else {
+      const top = 62, ctrlH = rowH + navH + 18;
+      const ph = hasSide ? Math.round((H - top - ctrlH) * .5) : H - top - ctrlH;
+      photo = { x: gap, y: top, w: W - gap * 2, h: ph };
+      if (hasSide) side = { x: gap + 4, y: top + ph + gap, w: W - gap * 2 - 8, h: H - top - ph - gap - ctrlH - 6 };
+    }
+    const aspect = (p) => p.outerW / p.outerH;
+    const mainP = st.panels[st.main];
+    const mh = Math.min(photo.h * .98, photo.w * .97 / aspect(mainP));
+    const cx = photo.x + photo.w / 2, cy = photo.y + photo.h / 2;
+    const targets = [];
+    targets[st.main] = { x: cx, y: cy, h: mh, dz: 0, yaw: 0 };
+    st.panels.forEach((p, i) => {
+      if (i === st.main) return;
+      const k = (i - st.main + st.panels.length) % st.panels.length;
+      targets[i] = { x: cx + (k % 2 ? 7 : -7), y: cy + 4, h: mh * .93, dz: .1 + k * .02, yaw: (k % 2 ? -1 : 1) * .05 };
+    });
+    let noteRect = null, playerAt = null;
+    if (side) {
+      if (it.text) noteRect = { x: side.x, y: side.y, w: side.w, h: side.h - playerH, paper: true };
+      if (it.audio) playerAt = { x: side.x + side.w / 2, y: noteRect ? null : side.y + side.h / 2, w: Math.min(side.w, 420) };
+    }
+    // стрелки — сразу под фото; «Продолжить» — внизу правой колонки (боком) или по центру
+    if (land) placeControls(cx, cy + mh / 2 + 2, side ? side.x + side.w / 2 : W / 2);
+    else placeControls(null);
+    return { targets, noteRect, playerAt };
+  }
+
   function applyStoryLayout(st, animate) {
     const L = storyLayout(st);
     st.panels.forEach((p, i) => {
@@ -375,8 +458,13 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       gsap.to(p.state, { focus: i === st.main ? 1 : 0, duration: animate ? .9 : .01, overwrite: 'auto' });
     });
     // записка: ширина подбирается так, чтобы текст целиком поместился в отведённое место
-    st.noteShown = false;
-    if (L.noteRect) {
+    st.noteShown = false; st.paperShown = false;
+    if (L.noteRect && L.noteRect.paper) {
+      const it = st.card.data;
+      const h = setPaper({ title: it.title, text: it.text, author: it.author }, L.noteRect);
+      st.noteBottomPx = L.noteRect.y + h;
+      st.paperShown = true;
+    } else if (L.noteRect) {
       const it = st.card.data, B = st.basis;
       const content = { title: it.title, text: it.text, author: it.author };
       let wWorld = L.noteRect.w * B.wpp * .96;
@@ -391,7 +479,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       st.noteShown = true;
     }
     if (L.playerAt) {
-      const y = L.playerAt.y ?? (st.noteBottomPx + 16 + 30);
+      const y = L.playerAt.y ?? (st.noteBottomPx + (isCompact() ? 10 + 28 : 16 + 30));
       Object.assign(ui.player.style, { left: L.playerAt.x + 'px', top: y + 'px', width: L.playerAt.w + 'px' });
     }
     ui.photoInfo.textContent = st.panels.length > 1 ? `${st.main + 1} / ${st.panels.length}` : '';
@@ -435,6 +523,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     world.particles.burst(cardPose.position);
     panelsS.forEach((p, i) => gsap.to(p.state, { out: 1, duration: 1.6, ease: 'power3.out', delay: .1 + i * .09 }));
     if (story.noteShown) gsap.delayedCall(.7, () => story && revealNoteAt(story.notePos, story.basis.q));
+    if (story.paperShown) revealPaper(.8);
     gsap.delayedCall(1.2, () => {
       if (story?.card !== card) return;
       showControls(); state = 'focus';
@@ -512,6 +601,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     stopAuto(st);
     story = null;
     ui.photoNav.hidden = true;
+    placeControls(null);
     show(ui.player, false);
     st.panels.forEach((p, i) => gsap.to(p.state, { out: 0, focus: 0, duration: 1.1, ease: 'power2.in', delay: i * .05 }));
     gsap.to(st.card.state, { reveal: 1, duration: 1.1, ease: 'sine.out', delay: .5 });
@@ -553,6 +643,17 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     letterPage = 0;
     letterPhoto = null;
     if (it.fromPhoto) { letterPhoto = new Image(); letterPhoto.src = it.fromPhoto; }
+    if (isCompact()) {
+      ui.letterNav.hidden = true;
+      const { shot } = focusLayout(p, null);
+      const D = 2.8, tl = gsap.timeline();
+      tl.add(rig.flyTo(shot, { duration: D, ease: 'power2.inOut', arc: .2 }), 0);
+      tl.to(p.state, { focus: 1, duration: D * .8, ease: 'power2.inOut' }, D * .15);
+      tl.call(() => p.setOpen(true), null, D * .7);
+      tl.call(() => { setPaper({ title: it.title, text, author: it.from }, letterRect()); revealPaper(); }, null, D * .8);
+      tl.call(() => { placeControls(null); showControls(); state = 'focus'; }, null, D * .8 + .7);
+      return;
+    }
     ui.letterNav.hidden = letterPages.length < 2;
     const size = setLetterPage();
     const { shot, notePos, dir } = focusLayout(p, size);
@@ -563,6 +664,12 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
     tl.call(() => p.setOpen(true), null, D * .7);
     tl.call(() => revealNote(notePos, shot, dir, p.focusPose().position), null, D * .78);
     tl.call(() => { showControls(); state = 'focus'; }, null, D * .78 + .7);
+  }
+  // место для письма на телефоне: по центру, над кнопкой «Продолжить»
+  function letterRect() {
+    const W = innerWidth, H = innerHeight, w = Math.min(560, W - 28);
+    const top = isCompactLand() ? 14 : 64;
+    return { x: (W - w) / 2, y: top, w, h: H - top - 78 };
   }
   function paginate(text, max) {
     const pages = []; let cur = '';
@@ -619,7 +726,7 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       .to(note.mesh.position, { x: end.x, y: end.y, z: end.z, duration: from ? 1.6 : 1.4, ease: 'power3.out' }, 0)
       .to(prog, { p: 1, duration: Math.min(4.2, 1.4 + len / 90), ease: 'sine.inOut', onUpdate: () => note.draw(prog.p) }, .45);
   }
-  function hideNote() { gsap.to(note, { opacity: 0, duration: .5, ease: 'sine.in' }); }
+  function hideNote() { gsap.to(note, { opacity: 0, duration: .5, ease: 'sine.in' }); hidePaper(); }
   function showControls() {
     show(ui.controls, true);
     if (story && !ui.player.hidden) show(ui.player, true);
@@ -951,6 +1058,8 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
 
   // ---------- размер окна ----------
   addEventListener('resize', () => {
+    if (!innerWidth || !innerHeight) return;         // промежуточный нулевой размер при повороте телефона
+    syncCompact();
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight, false);
@@ -962,7 +1071,16 @@ const wait = (s) => new Promise((r) => gsap.delayedCall(s, r));
       story.shot = shot;
       story.basis = stageBasis(shot, story.basis.depth);
       applyStoryLayout(story, false);
-      if (story.noteShown) { placeNoteAt(story.notePos, story.basis.q); note.draw(1); }
+      // переход «телефон ⇄ большой экран» (поворот планшета, смена размера окна): записка меняет вид
+      if (story.paperShown) { note.opacity = 0; gsap.set(ui.paper, { autoAlpha: 1, y: 0 }); }
+      else { gsap.killTweensOf(ui.paper); gsap.set(ui.paper, { autoAlpha: 0 }); ui.paper.hidden = true; }
+      if (story.noteShown) { placeNoteAt(story.notePos, story.basis.q); note.draw(1); note.opacity = 1; }
+      return;
+    }
+    if (state === 'focus' && current && current.isLetter && isCompact()) {
+      const { shot } = focusLayout(current, null);
+      rig.jump(shot);
+      setPaper({ title: current.data.title, text: letterCache[current.data.letter] || '', author: current.data.from }, letterRect());
       return;
     }
     if (state === 'focus' && current) {

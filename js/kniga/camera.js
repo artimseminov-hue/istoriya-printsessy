@@ -45,7 +45,12 @@ export function createRig(camera) {
   // insets — отступы в пикселях (сверху место для заголовка, снизу — для кнопок)
   function fit(points, dir, { top = 24, bottom = 24, left = 24, right: r = 24 } = {}) {
     dir = dir.clone().normalize();
-    const W = innerWidth, H = innerHeight;
+    // защита: окно нулевого размера (первые мгновения загрузки, поворот телефона) или отступы больше экрана
+    // давали NaN в положении камеры — сцена пропадала
+    const W = innerWidth || 800, H = innerHeight || 600;
+    const kx = Math.min(1, W * .8 / Math.max(1, left + r)), ky = Math.min(1, H * .8 / Math.max(1, top + bottom));
+    left *= kx; r *= kx; top *= ky; bottom *= ky;
+    if (!Number.isFinite(camera.aspect) || camera.aspect <= 0) { camera.aspect = W / H; camera.updateProjectionMatrix(); }
     const sx0 = -1 + 2 * left / W, sx1 = 1 - 2 * r / W, sy0 = -1 + 2 * bottom / H, sy1 = 1 - 2 * top / H;
     const tgt = V();
     for (const p of points) tgt.add(p);
